@@ -1,0 +1,45 @@
+# ── IDE ────────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+*.class
+*.swp
+*.swo
+.vscode/
+
+# ── OS ─────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Backend (Maven / Java) ──────────────────────────────────────────────────────
+backend/target/
+*.jar
+*.war
+*.ear
+
+# ── Frontend (Node) ─────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.yarn/
+frontend/.pnp.*
+
+# ── Environment files (only .env.example is versioned) ──────────────────────────
+frontend/.env.local
+frontend/.env.homolog
+frontend/.env.production
+frontend/.env.development
+.env
+.env.local
+.env.homolog
+.env.production
+
+# ── Logs ────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Docker generated ────────────────────────────────────────────────────────────
+.docker/
+
+# ── CLAUDE.md (convenções locais — não versionar) ───────────────────────────────
+CLAUDE.md
