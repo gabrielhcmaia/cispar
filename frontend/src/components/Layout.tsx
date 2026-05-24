@@ -23,6 +23,7 @@ export default function Layout() {
           <NavLink to="/exemplos" style={navLinkStyle}>
             <Button color="inherit">Exemplos</Button>
           </NavLink>
+          <Typography>Testando MR</Typography>
         </Toolbar>
       </AppBar>
       <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
