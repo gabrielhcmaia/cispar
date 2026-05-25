@@ -20,52 +20,6 @@ services:
       retries: 5
       start_period: 20s
 
-  # ── Adminer (interface web do banco) ──────────────────────────────────────────
-  adminer:
-    image: adminer:latest
-    restart: unless-stopped
-    ports:
-      - "8090:8080"
-    depends_on:
-      - postgres
-
-  # ── Backend Spring Boot (dev com hot reload via DevTools) ─────────────────────
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cispar
-      SPRING_DATASOURCE_USERNAME: cispar
-      SPRING_DATASOURCE_PASSWORD: cispar_dev
-    volumes:
-      - ./backend:/app          # código-fonte montado para hot reload
-      - maven_repo:/root/.m2    # cache de dependências Maven persistido
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # ── Frontend React (dev com Vite HMR) ─────────────────────────────────────────
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: http://localhost:8080
-    volumes:
-      - ./frontend:/app                        # código-fonte montado
-      - frontend_node_modules:/app/node_modules # preserva módulos instalados na imagem
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:
-  maven_repo:
-  frontend_node_modules:

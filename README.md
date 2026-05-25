@@ -9,42 +9,68 @@ Sistema de gestão para autarquias de abastecimento de água do município de Sa
 | Backend | Java 21 · Spring Boot 3.4 · Maven |
 | Frontend | React 18 · TypeScript strict · MUI v6 · Vite · Yarn |
 | Banco | PostgreSQL 16 |
-| Containers | Docker · Docker Compose |
 | Infraestrutura alvo | Oracle Cloud Infrastructure (OCI) — containers |
 
 ---
 
 ## Pré-requisitos
 
-- **Docker 24+** e **Docker Compose v2**
-- *(Opcional para dev local sem Docker)* Java 21 + Maven 3.9 / Node 20 + Yarn
+- **Docker 24+** e **Docker Compose v2** — para o banco de dados
+- **Java 21** + **Maven 3.9+** — para rodar o backend
+- **Node 22+** + **Yarn 1.22+** — para rodar o frontend (`asdf` recomendado — versões em `.tool-versions`)
+- **make** — para usar os atalhos do Makefile
+
+---
+
+## Atalhos (Makefile)
+
+Todos os comandos abaixo rodam a partir da raiz do repositório:
+
+| Comando | Descrição |
+|---------|-----------|
+| `make db` | Sobe o PostgreSQL em background |
+| `make api` | Inicia o backend Spring Boot (perfil `local`) |
+| `make front` | Inicia o frontend Vite |
+| `make db-down` | Para o container do banco |
+| `make db-reset` | Apaga o volume e recria o banco do zero |
+
+**Fluxo de desenvolvimento:**
+```bash
+make db      # terminal 1 — sobe o banco
+make api     # terminal 2 — sobe o backend
+make front   # terminal 3 — sobe o frontend
+```
 
 ---
 
 ## Subir o ambiente de desenvolvimento
 
+### Pré-requisito: banco de dados
+
 ```bash
-docker compose up
+make db
 ```
 
-Na **primeira execução** o Maven baixa as dependências (~5 min). As execuções seguintes são rápidas graças ao cache de volumes nomeados.
-
-Para rodar em background:
+Para acompanhar os logs:
 ```bash
-docker compose up -d
-docker compose logs -f   # acompanhar logs
+docker compose logs -f
 ```
 
-Para parar e limpar:
+### Backend (Spring Boot)
+
 ```bash
-docker compose down          # para e remove containers (volumes persistem)
-docker compose down -v       # idem + apaga volumes (reset completo do banco)
+make api
 ```
 
-Reconstruir imagens após mudar dependências:
+Equivalente a `cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local`. O perfil `local` usa as credenciais padrão do banco em `localhost:5432`.
+
+### Frontend (Vite)
+
 ```bash
-docker compose build --no-cache
+make front
 ```
+
+Na primeira execução o `make front` instala as dependências automaticamente. A variável `VITE_API_URL` pode ser ajustada em `frontend/.env.local` (padrão: `http://localhost:8080`).
 
 ---
 
@@ -55,17 +81,28 @@ docker compose build --no-cache
 | Frontend | <http://localhost:5173> | App React — Vite dev server |
 | Backend | <http://localhost:8080> | API Spring Boot |
 | Health | <http://localhost:8080/actuator/health> | Actuator health check |
-| Adminer | <http://localhost:8090> | Interface web do PostgreSQL |
 | PostgreSQL | `localhost:5432` | Banco de dados |
 
-### Credenciais do banco (dev)
+---
 
-```
-Host:     localhost:5432
-Database: cispar
-User:     cispar
-Password: cispar_dev
-```
+## Conectar ao banco com DBeaver
+
+1. Abra o DBeaver e clique em **Nova Conexão** (ícone de tomada com `+`).
+2. Selecione **PostgreSQL** e clique em **Avançar**.
+3. Preencha a aba **Principal**:
+
+| Campo | Valor |
+|-------|-------|
+| Host | `localhost` |
+| Port | `5432` |
+| Database | `cispar` |
+| Username | `cispar` |
+| Password | `cispar_dev` |
+
+4. Clique em **Testar Conexão** — o DBeaver pode pedir para baixar o driver PostgreSQL na primeira vez, basta confirmar.
+5. Clique em **Concluir**.
+
+> O banco só estará acessível enquanto o container estiver rodando (`docker compose up -d`).
 
 ---
 
@@ -85,7 +122,7 @@ cispar/
 │   │   └── exception/       # @RestControllerAdvice global
 │   └── src/main/resources/
 │       ├── db/migration/    # Flyway — versiona o schema
-│       └── application*.yml # perfis: local · homolog · prod
+│       └── application*.yml # perfis: local · prod
 ├── frontend/                # React · Vite · TS strict · MUI
 │   └── src/
 │       ├── features/        # organização por feature
@@ -96,7 +133,9 @@ cispar/
 │       ├── theme/           # tema MUI
 │       └── routes/          # React Router
 ├── docker/                  # configs auxiliares (nginx.conf prod)
-├── docker-compose.yml       # ambiente dev completo
+├── .tool-versions           # versões Node/Java/Yarn via asdf
+├── Makefile                 # atalhos: make db · make api · make front
+├── docker-compose.yml       # PostgreSQL (dev)
 └── README.md
 ```
 
@@ -110,33 +149,9 @@ A feature `exemplo` — entidade com `id`, `nome`, `criadoEm`, endpoints `GET/PO
 
 ---
 
-## Ambientes
+## Produção — Oracle Cloud Infrastructure
 
-### Local / Desenvolvimento (ativo)
-
-```bash
-docker compose up
-```
-
-Perfil Spring: `local` · variáveis via `docker-compose.yml` · `.env.local` no frontend.
-
-### Homologação (a configurar)
-
-Subir com perfil `homolog`:
-```bash
-SPRING_PROFILES_ACTIVE=homolog \
-SPRING_DATASOURCE_URL=jdbc:postgresql://<host>/cispar \
-SPRING_DATASOURCE_USERNAME=<user> \
-SPRING_DATASOURCE_PASSWORD=<senha> \
-CORS_ALLOWED_ORIGINS=https://<dominio-homolog> \
-java -jar cispar-api.jar
-```
-
-Variáveis de ambiente do frontend: preencher `frontend/.env.homolog` e fazer build com `yarn build --mode homolog`.
-
-### Produção — Oracle Cloud Infrastructure (a configurar)
-
-Deploy como container (OKE ou VM com Docker). As imagens de produção são geradas pelos Dockerfiles multi-stage em `backend/Dockerfile` e `frontend/Dockerfile`.
+As imagens de produção são geradas pelos Dockerfiles multi-stage em `backend/Dockerfile` e `frontend/Dockerfile`.
 
 Configure no painel da OCI / secrets manager:
 - `SPRING_DATASOURCE_URL`
@@ -144,8 +159,6 @@ Configure no painel da OCI / secrets manager:
 - `SPRING_DATASOURCE_PASSWORD`
 - `CORS_ALLOWED_ORIGINS` (domínio de produção — a definir)
 - `VITE_API_URL` (URL da API em produção — a definir)
-
-O domínio de produção ainda será definido; toda a config é via variáveis de ambiente.
 
 ---
 
