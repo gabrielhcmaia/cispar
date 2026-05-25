@@ -1,23 +1,18 @@
-import { useEffect, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import type { HealthStatus } from '../../types/api';
-import { checkHealth } from '../../services/healthService';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { useApiStatus } from '../../hooks/useApiStatus';
 
 export default function HomePage() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { status, latency, lastChecked, refresh } = useApiStatus();
 
-  useEffect(() => {
-    checkHealth()
-      .then(setHealth)
-      .catch(() => setHealth({ status: 'DOWN' }))
-      .finally(() => setLoading(false));
-  }, []);
+  const isInitialCheck = status === 'checking' && lastChecked === null;
 
   return (
     <Box>
@@ -30,18 +25,39 @@ export default function HomePage() {
 
       <Paper variant="outlined" sx={{ p: 2, mt: 3, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="body1">Status da API:</Typography>
-        {loading ? (
+
+        {isInitialCheck ? (
           <CircularProgress size={20} />
         ) : (
-          <Chip
-            label={health?.status ?? 'UNKNOWN'}
-            color={health?.status === 'UP' ? 'success' : 'error'}
-            size="small"
-          />
+          <>
+            <Chip
+              label={status === 'online' ? 'Online' : status === 'offline' ? 'Offline' : 'Verificando…'}
+              color={status === 'online' ? 'success' : status === 'offline' ? 'error' : 'default'}
+              size="small"
+            />
+            {status === 'online' && latency !== null && (
+              <Typography variant="caption" color="text.secondary">
+                {latency} ms
+              </Typography>
+            )}
+            {lastChecked && (
+              <Typography variant="caption" color="text.secondary">
+                verificado às {lastChecked.toLocaleTimeString('pt-BR')}
+              </Typography>
+            )}
+          </>
         )}
+
+        <Tooltip title="Verificar agora">
+          <span>
+            <IconButton size="small" onClick={refresh} disabled={isInitialCheck}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Paper>
 
-      {!loading && health?.status !== 'UP' && (
+      {status === 'offline' && (
         <Alert severity="error" sx={{ mt: 2 }}>
           API indisponível. Verifique se o backend está rodando em{' '}
           <strong>{import.meta.env.VITE_API_URL}</strong>.

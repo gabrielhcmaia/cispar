@@ -17,16 +17,38 @@ Sistema de gestão para autarquias de abastecimento de água do município de Sa
 
 - **Docker 24+** e **Docker Compose v2** — para o banco de dados
 - **Java 21** + **Maven 3.9+** — para rodar o backend
-- **Node 20+** + **Yarn** — para rodar o frontend
+- **Node 22+** + **Yarn 1.22+** — para rodar o frontend (`asdf` recomendado — versões em `.tool-versions`)
+- **make** — para usar os atalhos do Makefile
+
+---
+
+## Atalhos (Makefile)
+
+Todos os comandos abaixo rodam a partir da raiz do repositório:
+
+| Comando | Descrição |
+|---------|-----------|
+| `make db` | Sobe o PostgreSQL em background |
+| `make api` | Inicia o backend Spring Boot (perfil `local`) |
+| `make front` | Inicia o frontend Vite |
+| `make db-down` | Para o container do banco |
+| `make db-reset` | Apaga o volume e recria o banco do zero |
+
+**Fluxo de desenvolvimento:**
+```bash
+make db      # terminal 1 — sobe o banco
+make api     # terminal 2 — sobe o backend
+make front   # terminal 3 — sobe o frontend
+```
 
 ---
 
 ## Subir o ambiente de desenvolvimento
 
-### 1. Banco de dados (PostgreSQL)
+### Pré-requisito: banco de dados
 
 ```bash
-docker compose up -d
+make db
 ```
 
 Para acompanhar os logs:
@@ -34,36 +56,21 @@ Para acompanhar os logs:
 docker compose logs -f
 ```
 
-Para parar:
-```bash
-docker compose down          # para e remove containers (volume persiste)
-docker compose down -v       # idem + apaga o volume (reset completo do banco)
-```
-
-### 2. Backend (Spring Boot)
+### Backend (Spring Boot)
 
 ```bash
-cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+make api
 ```
 
-O perfil `local` usa as credenciais padrão do banco em `localhost:5432`. Para sobrescrever:
-```bash
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/cispar \
-SPRING_DATASOURCE_USERNAME=cispar \
-SPRING_DATASOURCE_PASSWORD=cispar_dev \
-mvn spring-boot:run -Dspring-boot.run.profiles=local
-```
+Equivalente a `cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local`. O perfil `local` usa as credenciais padrão do banco em `localhost:5432`.
 
-### 3. Frontend (Vite)
+### Frontend (Vite)
 
 ```bash
-cd frontend
-yarn install   # apenas na primeira vez ou após mudar dependências
-yarn dev
+make front
 ```
 
-A variável `VITE_API_URL` pode ser ajustada em `frontend/.env.local` (já criada com o valor padrão `http://localhost:8080`).
+Na primeira execução o `make front` instala as dependências automaticamente. A variável `VITE_API_URL` pode ser ajustada em `frontend/.env.local` (padrão: `http://localhost:8080`).
 
 ---
 
@@ -126,7 +133,9 @@ cispar/
 │       ├── theme/           # tema MUI
 │       └── routes/          # React Router
 ├── docker/                  # configs auxiliares (nginx.conf prod)
-├── docker-compose.yml       # PostgreSQL + Adminer
+├── .tool-versions           # versões Node/Java/Yarn via asdf
+├── Makefile                 # atalhos: make db · make api · make front
+├── docker-compose.yml       # PostgreSQL (dev)
 └── README.md
 ```
 
