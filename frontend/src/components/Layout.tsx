@@ -20,9 +20,6 @@ export default function Layout() {
           <NavLink to="/" style={navLinkStyle}>
             <Button color="inherit">Início</Button>
           </NavLink>
-          <NavLink to="/exemplos" style={navLinkStyle}>
-            <Button color="inherit">Exemplos</Button>
-          </NavLink>
         </Toolbar>
       </AppBar>
       <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>

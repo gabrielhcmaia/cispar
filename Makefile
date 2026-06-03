@@ -1,7 +1,12 @@
 BACKEND_DIR  := backend
 FRONTEND_DIR := frontend
 
-.PHONY: db db-down db-reset api front clean
+DB_URL  := postgresql://cispar:cispar_dev@localhost:5433/cispar?sslmode=disable
+MIGRATE := docker run --rm --network host -v $(PWD)/migrations:/migrations migrate/migrate \
+           -path=/migrations -database "$(DB_URL)"
+
+.PHONY: db db-down db-reset api front clean \
+        db-migrate-up db-migrate-down db-migrate-down-all db-migrate-version
 
 db:
 	docker compose up -d
@@ -12,7 +17,19 @@ db-down:
 db-reset:
 	docker compose down -v && docker compose up -d
 
-api: db
+db-migrate-up:
+	$(MIGRATE) up
+
+db-migrate-down:
+	$(MIGRATE) down 1
+
+db-migrate-down-all:
+	$(MIGRATE) down -all
+
+db-migrate-version:
+	$(MIGRATE) version
+
+api:
 	cd $(BACKEND_DIR) && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 frontend/node_modules: frontend/package.json frontend/yarn.lock

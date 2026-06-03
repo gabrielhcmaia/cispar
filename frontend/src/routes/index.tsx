@@ -1,15 +1,22 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../components/Layout';
 import HomePage from '../features/home/HomePage';
-import ExemploPage from '../features/exemplo/ExemploPage';
+import { LoginPage } from '../features/auth/LoginPage';
+import { PrivateRoute } from '../components/PrivateRoute';
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <Layout />,
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    element: <PrivateRoute />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'exemplos', element: <ExemploPage /> },
+      {
+        path: '/',
+        element: <Layout />,
+        children: [{ index: true, element: <HomePage /> }],
+      },
     ],
   },
 ]);
