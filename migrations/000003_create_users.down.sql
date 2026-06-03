@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS user_role;
+DROP EXTENSION IF EXISTS pgcrypto;
+
+CREATE TABLE usuarios (
+    id         SERIAL PRIMARY KEY,
+    nome       VARCHAR(100) NOT NULL,
+    email      VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    ativo      BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em  TIMESTAMP NOT NULL DEFAULT NOW()
+);
