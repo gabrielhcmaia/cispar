@@ -14,12 +14,15 @@ import SummarizeIcon from '@mui/icons-material/Summarize';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import type { NavGroup } from './Sidebar';
 
-export const navGroups: NavGroup[] = [
+export function getNavGroups(role?: string): NavGroup[] {
+  const isAdmin = role === 'ROLE_ADMIN';
+
+  return [
   {
     groupLabel: 'Menu Principal',
     items: [
       { label: 'Dashboard',    path: '/',            icon: <DashboardIcon /> },
-      { label: 'Usuários',     path: '/users',       icon: <PeopleIcon /> },
+      ...(isAdmin ? [{ label: 'Usuários', path: '/users', icon: <PeopleIcon /> }] : []),
       { label: 'Login',        path: '/login',       icon: <LoginIcon /> },
       { label: 'Poços',        path: '/wells',       icon: <OpacityIcon /> },
       { label: 'Equipamentos', path: '/equipment',   icon: <BuildIcon /> },
@@ -52,7 +55,11 @@ export const navGroups: NavGroup[] = [
       },
     ],
   },
-];
+  ];
+}
+
+// Mantido para compatibilidade — preferir getNavGroups(role) quando possível
+export const navGroups = getNavGroups();
 
 export const pageTitles: Record<string, string> = {
   '/':                      'Dashboard',

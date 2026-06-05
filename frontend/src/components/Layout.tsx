@@ -5,7 +5,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import Header from './Header';
 import Sidebar from './Sidebar';
-import { navGroups, getPageTitle } from './HomeNavigation';
+import { getNavGroups, getPageTitle } from './HomeNavigation';
+import { useAuth } from '../hooks/useAuth';
 
 const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 64;
@@ -13,7 +14,9 @@ const COLLAPSED_WIDTH = 64;
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const { user } = useAuth();
   const pageTitle = getPageTitle(location.pathname);
+  const navGroups = getNavGroups(user?.role !== undefined ? String(user.role) : undefined);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
