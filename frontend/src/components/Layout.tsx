@@ -1,30 +1,50 @@
-import AppBar from '@mui/material/AppBar';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import { Outlet } from 'react-router-dom';
-import { NavLink } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
-const navLinkStyle = { textDecoration: 'none', color: 'inherit' };
+import Header from './Header';
+import Sidebar from './Sidebar';
+import { navGroups, getPageTitle } from './HomeNavigation';
+
+const DRAWER_WIDTH = 260;
+const COLLAPSED_WIDTH = 64;
 
 export default function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
+  const pageTitle = getPageTitle(location.pathname);
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            CISPAR
-          </Typography>
-          <NavLink to="/" style={navLinkStyle}>
-            <Button color="inherit">Início</Button>
-          </NavLink>
-        </Toolbar>
-      </AppBar>
-      <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
+      <Sidebar
+        open={sidebarOpen}
+        navGroups={navGroups}
+        drawerWidth={DRAWER_WIDTH}
+        collapsedWidth={COLLAPSED_WIDTH}
+      />
+
+      <Header
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        pageTitle={pageTitle}
+        drawerWidth={DRAWER_WIDTH}
+        collapsedWidth={COLLAPSED_WIDTH}
+      />
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          minHeight: '100vh',
+          overflow: 'auto',
+
+        }}
+      >
+        <Toolbar />
         <Outlet />
-      </Container>
+      </Box>
     </Box>
   );
 }
