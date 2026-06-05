@@ -58,7 +58,6 @@ export function getNavGroups(role?: string): NavGroup[] {
   ];
 }
 
-// Mantido para compatibilidade — preferir getNavGroups(role) quando possível
 export const navGroups = getNavGroups();
 
 export const pageTitles: Record<string, string> = {
