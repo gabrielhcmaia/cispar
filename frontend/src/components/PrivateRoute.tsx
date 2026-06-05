@@ -1,3 +1,4 @@
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';

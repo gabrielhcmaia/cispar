@@ -24,6 +24,11 @@ interface HeaderProps {
 const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 64;
 
+const ROLE_LABELS: Record<string, string> = {
+  USER_ADMIN: 'Administrador',
+  USER_DEFAULT: 'Usuário',
+};
+
 export default function Header({
   sidebarOpen,
   onToggleSidebar,
@@ -82,7 +87,7 @@ export default function Header({
               {user?.username ?? 'Usuário'}
             </Typography>
             <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
-              {user?.role !== undefined ? String(user.role) : ''}
+              {user?.role !== undefined ? (ROLE_LABELS[String(user.role)] ?? String(user.role)) : ''}
             </Typography>
           </Stack>
 

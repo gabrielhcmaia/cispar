@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { NavLink, useLocation } from 'react-router-dom';
+import type { NavItem, NavGroup, SidebarProps } from './SidebarTypes';
 
 const BG = '#0D0B2A';
 const ACTIVE_BG = '#1E1A4A';
@@ -22,31 +23,6 @@ const TEXT_NORMAL = 'rgba(255,255,255,0.85)';
 const TEXT_ACTIVE = '#FFFFFF';
 const ICON_COLOR = 'rgba(255,255,255,0.65)';
 const GROUP_LABEL_COLOR = 'rgba(255,255,255,0.38)';
-
-export interface SubNavItem {
-  label: string;
-  path: string;
-  icon: React.ReactNode;
-}
-
-export interface NavItem {
-  label: string;
-  path?: string;         
-  icon: React.ReactNode;
-  children?: SubNavItem[];
-}
-
-export interface NavGroup {
-  groupLabel?: string;   
-  items: NavItem[];
-}
-
-interface SidebarProps {
-  open: boolean;
-  navGroups: NavGroup[];
-  drawerWidth?: number;
-  collapsedWidth?: number;
-}
 
 const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 64;
