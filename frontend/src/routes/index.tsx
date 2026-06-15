@@ -4,6 +4,7 @@ import HomePage from '../features/home/HomePage';
 import { LoginPage } from '../features/auth/LoginPage';
 import { PrivateRoute } from '../components/PrivateRoute';
 import UsersPage from '../features/users/UsersPage';
+import TecnicosPage from '../features/base/technicians/TecnicosPage';
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <HomePage /> },
           { path: 'users', element: <UsersPage /> },
+          { path: 'base/technicians', element: <TecnicosPage /> },
         ],
       },
     ],
