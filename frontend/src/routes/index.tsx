@@ -5,6 +5,7 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { PrivateRoute } from '../components/PrivateRoute';
 import UsersPage from '../features/users/UsersPage';
 import TecnicosPage from '../features/base/technicians/TecnicosPage';
+import UnidadesPage from '../features/base/units/UnidadesPage';
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'base/technicians', element: <TecnicosPage /> },
+          { path: 'base/units', element: <UnidadesPage /> },
         ],
       },
     ],
