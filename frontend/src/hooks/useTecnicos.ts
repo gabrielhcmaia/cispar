@@ -1,34 +1,61 @@
-import { useCallback, useState } from 'react';
-import { SEED_TECNICOS } from '../features/base/technicians/tecnicosConstants';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  atualizarTecnico,
+  criarTecnico,
+  excluirTecnico,
+  listarTecnicos,
+} from '../services/tecnicosService';
 import type { Tecnico, TecnicoFormData } from '../types/tecnico';
 
 export interface UseTecnicosResult {
   tecnicos: Tecnico[];
-  addTecnico: (data: TecnicoFormData) => void;
-  updateTecnico: (id: string, data: TecnicoFormData) => void;
-  removeTecnico: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addTecnico: (data: TecnicoFormData) => Promise<void>;
+  updateTecnico: (id: number, data: TecnicoFormData) => Promise<void>;
+  removeTecnico: (id: number) => Promise<void>;
 }
 
-/**
- * Mantém a lista de técnicos em estado de memória (React state), com dados
- * iniciais mockados. Centraliza as operações de CRUD da tela.
- */
+function ordenarPorIdDesc(lista: Tecnico[]): Tecnico[] {
+  return [...lista].sort((a, b) => b.id - a.id);
+}
+
 export function useTecnicos(): UseTecnicosResult {
-  const [tecnicos, setTecnicos] = useState<Tecnico[]>(SEED_TECNICOS);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addTecnico = useCallback((data: TecnicoFormData): void => {
-    setTecnicos((prev) => [...prev, { id: crypto.randomUUID(), ...data }]);
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await listarTecnicos();
+      setTecnicos(ordenarPorIdDesc(data));
+    } catch {
+      setError('Erro ao carregar técnicos.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const updateTecnico = useCallback((id: string, data: TecnicoFormData): void => {
-    setTecnicos((prev) =>
-      prev.map((tecnico) => (tecnico.id === id ? { ...tecnico, ...data } : tecnico))
-    );
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  const addTecnico = useCallback(async (data: TecnicoFormData) => {
+    const criado = await criarTecnico(data);
+    setTecnicos((prev) => ordenarPorIdDesc([criado, ...prev]));
   }, []);
 
-  const removeTecnico = useCallback((id: string): void => {
-    setTecnicos((prev) => prev.filter((tecnico) => tecnico.id !== id));
+  const updateTecnico = useCallback(async (id: number, data: TecnicoFormData) => {
+    const atualizado = await atualizarTecnico(id, data);
+    setTecnicos((prev) => ordenarPorIdDesc(prev.map((item) => (item.id === id ? atualizado : item))));
   }, []);
 
-  return { tecnicos, addTecnico, updateTecnico, removeTecnico };
+  const removeTecnico = useCallback(async (id: number) => {
+    await excluirTecnico(id);
+    setTecnicos((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  return { tecnicos, loading, error, addTecnico, updateTecnico, removeTecnico };
 }

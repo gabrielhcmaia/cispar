@@ -1,26 +1,28 @@
 import { useMemo, useState, type ReactElement } from 'react';
-import type { SxProps, Theme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 import { FilterBar } from '../../../components/FilterBar';
 import { ExportMenu } from '../../../components/ExportMenu';
+import { SELECT_MENU_PROPS, SELECT_SX } from '../../../components/selectStyles';
 import { useUnidadesMedida } from '../../../hooks/useUnidadesMedida';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import { exportToCsv, exportToPdf, type ExportColumn } from '../../../utils/exporters';
 import type { Grandeza, UnidadeMedida, UnidadeMedidaFormData } from '../../../types/unidadeMedida';
 import { GRANDEZA_OPTIONS } from './unidadesConstants';
 import { UnidadesTable } from './UnidadesTable';
 import { UnidadeFormDialog } from './UnidadeFormDialog';
-
-const SELECT_SX: SxProps<Theme> = {
-  minWidth: { xs: '100%', md: 200 },
-  '& .MuiOutlinedInput-root': { borderRadius: 1.5 },
-};
 
 const EXPORT_COLUMNS: ExportColumn<UnidadeMedida>[] = [
   { header: 'Nome', accessor: (unidade) => unidade.nome },
@@ -28,14 +30,20 @@ const EXPORT_COLUMNS: ExportColumn<UnidadeMedida>[] = [
   { header: 'Grandeza', accessor: (unidade) => unidade.grandeza },
 ];
 
+function scrollToTop(): void {
+  const main = document.querySelector('main');
+  if (main) {
+    main.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 export default function UnidadesPage(): ReactElement {
-  const { unidades, addUnidade, updateUnidade } = useUnidadesMedida();
+  const { unidades, loading, error, addUnidade, updateUnidade } = useUnidadesMedida();
 
   const [search, setSearch] = useState('');
   const [filtroGrandeza, setFiltroGrandeza] = useState<Grandeza | ''>('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<UnidadeMedida | null>(null);
 
@@ -51,18 +59,45 @@ export default function UnidadesPage(): ReactElement {
     });
   }, [unidades, search, filtroGrandeza]);
 
-  // Qualquer mudança de filtro retorna para a primeira página.
+  const { visibleCount, sentinelRef, reset } = useInfiniteScroll(unidadesFiltradas.length);
+
+  const resetListagem = (): void => {
+    setSelectedIds(new Set());
+    reset();
+  };
   const handleSearchChange = (value: string): void => {
     setSearch(value);
-    setPage(0);
+    resetListagem();
   };
   const handleGrandezaChange = (value: Grandeza | ''): void => {
     setFiltroGrandeza(value);
-    setPage(0);
+    resetListagem();
   };
-  const handleRowsPerPageChange = (value: number): void => {
-    setRowsPerPage(value);
-    setPage(0);
+
+  const itensVisiveis = unidadesFiltradas.slice(0, visibleCount);
+  const hasMore = visibleCount < unidadesFiltradas.length;
+  const allSelected =
+    unidadesFiltradas.length > 0 && unidadesFiltradas.every((item) => selectedIds.has(item.id));
+  const someSelected = unidadesFiltradas.some((item) => selectedIds.has(item.id));
+
+  const handleToggle = (id: number): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+  const handleToggleAll = (): void => {
+    setSelectedIds((prev) => {
+      if (unidadesFiltradas.every((item) => prev.has(item.id))) {
+        return new Set();
+      }
+      return new Set(unidadesFiltradas.map((item) => item.id));
+    });
   };
 
   const handleNova = (): void => {
@@ -76,24 +111,32 @@ export default function UnidadesPage(): ReactElement {
   const handleClose = (): void => {
     setDialogOpen(false);
   };
-  const handleSubmit = (data: UnidadeMedidaFormData): void => {
-    if (editing) {
-      updateUnidade(editing.id, data);
-    } else {
-      addUnidade(data);
+  const handleSubmit = async (data: UnidadeMedidaFormData): Promise<void> => {
+    try {
+      if (editing) {
+        await updateUnidade(editing.id, data);
+      } else {
+        await addUnidade(data);
+      }
+      setDialogOpen(false);
+    } catch {
+      setDialogOpen(true);
     }
-    setDialogOpen(false);
   };
 
+  const selecionados = useMemo(
+    () => unidadesFiltradas.filter((item) => selectedIds.has(item.id)),
+    [unidadesFiltradas, selectedIds]
+  );
   const handleExportCsv = (): void => {
-    exportToCsv('unidades-medida', EXPORT_COLUMNS, unidadesFiltradas);
+    exportToCsv('unidades-medida', EXPORT_COLUMNS, selecionados);
   };
   const handleExportPdf = (): void => {
-    exportToPdf('Unidades de Medida', EXPORT_COLUMNS, unidadesFiltradas);
+    exportToPdf('Unidades de Medida', EXPORT_COLUMNS, selecionados);
   };
 
   return (
-    <Box>
+    <Box sx={{ pb: 8 }}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -127,7 +170,7 @@ export default function UnidadesPage(): ReactElement {
           <ExportMenu
             onExportCsv={handleExportCsv}
             onExportPdf={handleExportPdf}
-            disabled={unidadesFiltradas.length === 0}
+            disabled={selectedIds.size === 0}
           />
         }
       >
@@ -137,7 +180,8 @@ export default function UnidadesPage(): ReactElement {
           label="Grandeza"
           value={filtroGrandeza}
           onChange={(event) => handleGrandezaChange(event.target.value as Grandeza | '')}
-          sx={SELECT_SX}
+          sx={[{ minWidth: { xs: '100%', md: 200 } }, SELECT_SX]}
+          slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
         >
           <MenuItem value="">Todas</MenuItem>
           {GRANDEZA_OPTIONS.map((grandeza) => (
@@ -148,14 +192,53 @@ export default function UnidadesPage(): ReactElement {
         </TextField>
       </FilterBar>
 
-      <UnidadesTable
-        unidades={unidadesFiltradas}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={handleRowsPerPageChange}
-        onEdit={handleEdit}
-      />
+      {error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      ) : null}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <UnidadesTable
+          items={itensVisiveis}
+          hasMore={hasMore}
+          sentinelRef={sentinelRef}
+          selectedIds={selectedIds}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onToggle={handleToggle}
+          onToggleAll={handleToggleAll}
+          onEdit={handleEdit}
+        />
+      )}
+
+      <Paper
+        elevation={3}
+        sx={{
+          position: 'fixed',
+          right: 24,
+          bottom: 24,
+          px: 2,
+          py: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          Exibindo {Math.min(visibleCount, unidadesFiltradas.length)} de {unidadesFiltradas.length}
+        </Typography>
+        <Tooltip title="Voltar ao topo">
+          <IconButton size="small" color="primary" onClick={scrollToTop}>
+            <KeyboardArrowUpIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Paper>
 
       <UnidadeFormDialog
         open={dialogOpen}

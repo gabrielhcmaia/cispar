@@ -5,21 +5,24 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 import { FilterBar } from '../../../components/FilterBar';
 import { ExportMenu } from '../../../components/ExportMenu';
+import { SELECT_MENU_PROPS, SELECT_SX } from '../../../components/selectStyles';
 import { useTecnicos } from '../../../hooks/useTecnicos';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import { exportToCsv, exportToPdf, type ExportColumn } from '../../../utils/exporters';
 import type { Cargo, Funcao, Tecnico, TecnicoFormData } from '../../../types/tecnico';
 import { CARGO_OPTIONS, FUNCAO_OPTIONS } from './tecnicosConstants';
 import { TecnicosTable } from './TecnicosTable';
 import { TecnicoFormDialog } from './TecnicoFormDialog';
-
-const SELECT_SX = {
-  minWidth: { xs: '100%', md: 190 },
-  '& .MuiOutlinedInput-root': { borderRadius: 1.5 },
-} as const;
 
 const EXPORT_COLUMNS: ExportColumn<Tecnico>[] = [
   { header: 'Nome', accessor: (tecnico) => tecnico.nome },
@@ -29,15 +32,21 @@ const EXPORT_COLUMNS: ExportColumn<Tecnico>[] = [
   { header: 'E-mail', accessor: (tecnico) => tecnico.email },
 ];
 
+function scrollToTop(): void {
+  const main = document.querySelector('main');
+  if (main) {
+    main.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 export default function TecnicosPage(): ReactElement {
-  const { tecnicos, addTecnico, updateTecnico } = useTecnicos();
+  const { tecnicos, loading, error, addTecnico, updateTecnico } = useTecnicos();
 
   const [search, setSearch] = useState('');
   const [filtroCargo, setFiltroCargo] = useState<Cargo | ''>('');
   const [filtroFuncao, setFiltroFuncao] = useState<Funcao | ''>('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Tecnico | null>(null);
 
@@ -54,22 +63,49 @@ export default function TecnicosPage(): ReactElement {
     });
   }, [tecnicos, search, filtroCargo, filtroFuncao]);
 
-  // Qualquer mudança de filtro retorna para a primeira página.
+  const { visibleCount, sentinelRef, reset } = useInfiniteScroll(tecnicosFiltrados.length);
+
+  const resetListagem = (): void => {
+    setSelectedIds(new Set());
+    reset();
+  };
   const handleSearchChange = (value: string): void => {
     setSearch(value);
-    setPage(0);
+    resetListagem();
   };
   const handleCargoChange = (value: Cargo | ''): void => {
     setFiltroCargo(value);
-    setPage(0);
+    resetListagem();
   };
   const handleFuncaoChange = (value: Funcao | ''): void => {
     setFiltroFuncao(value);
-    setPage(0);
+    resetListagem();
   };
-  const handleRowsPerPageChange = (value: number): void => {
-    setRowsPerPage(value);
-    setPage(0);
+
+  const itensVisiveis = tecnicosFiltrados.slice(0, visibleCount);
+  const hasMore = visibleCount < tecnicosFiltrados.length;
+  const allSelected =
+    tecnicosFiltrados.length > 0 && tecnicosFiltrados.every((item) => selectedIds.has(item.id));
+  const someSelected = tecnicosFiltrados.some((item) => selectedIds.has(item.id));
+
+  const handleToggle = (id: number): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+  const handleToggleAll = (): void => {
+    setSelectedIds((prev) => {
+      if (tecnicosFiltrados.every((item) => prev.has(item.id))) {
+        return new Set();
+      }
+      return new Set(tecnicosFiltrados.map((item) => item.id));
+    });
   };
 
   const handleNovo = (): void => {
@@ -83,24 +119,32 @@ export default function TecnicosPage(): ReactElement {
   const handleClose = (): void => {
     setDialogOpen(false);
   };
-  const handleSubmit = (data: TecnicoFormData): void => {
-    if (editing) {
-      updateTecnico(editing.id, data);
-    } else {
-      addTecnico(data);
+  const handleSubmit = async (data: TecnicoFormData): Promise<void> => {
+    try {
+      if (editing) {
+        await updateTecnico(editing.id, data);
+      } else {
+        await addTecnico(data);
+      }
+      setDialogOpen(false);
+    } catch {
+      setDialogOpen(true);
     }
-    setDialogOpen(false);
   };
 
+  const selecionados = useMemo(
+    () => tecnicosFiltrados.filter((item) => selectedIds.has(item.id)),
+    [tecnicosFiltrados, selectedIds]
+  );
   const handleExportCsv = (): void => {
-    exportToCsv('tecnicos', EXPORT_COLUMNS, tecnicosFiltrados);
+    exportToCsv('tecnicos', EXPORT_COLUMNS, selecionados);
   };
   const handleExportPdf = (): void => {
-    exportToPdf('Técnicos', EXPORT_COLUMNS, tecnicosFiltrados);
+    exportToPdf('Técnicos', EXPORT_COLUMNS, selecionados);
   };
 
   return (
-    <Box>
+    <Box sx={{ pb: 8 }}>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
@@ -134,7 +178,7 @@ export default function TecnicosPage(): ReactElement {
           <ExportMenu
             onExportCsv={handleExportCsv}
             onExportPdf={handleExportPdf}
-            disabled={tecnicosFiltrados.length === 0}
+            disabled={selectedIds.size === 0}
           />
         }
       >
@@ -144,7 +188,8 @@ export default function TecnicosPage(): ReactElement {
           label="Cargo"
           value={filtroCargo}
           onChange={(event) => handleCargoChange(event.target.value as Cargo | '')}
-          sx={SELECT_SX}
+          sx={[{ minWidth: { xs: '100%', md: 190 } }, SELECT_SX]}
+          slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
         >
           <MenuItem value="">Todos</MenuItem>
           {CARGO_OPTIONS.map((cargo) => (
@@ -160,7 +205,8 @@ export default function TecnicosPage(): ReactElement {
           label="Funções"
           value={filtroFuncao}
           onChange={(event) => handleFuncaoChange(event.target.value as Funcao | '')}
-          sx={SELECT_SX}
+          sx={[{ minWidth: { xs: '100%', md: 190 } }, SELECT_SX]}
+          slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
         >
           <MenuItem value="">Todas</MenuItem>
           {FUNCAO_OPTIONS.map((funcao) => (
@@ -171,14 +217,53 @@ export default function TecnicosPage(): ReactElement {
         </TextField>
       </FilterBar>
 
-      <TecnicosTable
-        tecnicos={tecnicosFiltrados}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={handleRowsPerPageChange}
-        onEdit={handleEdit}
-      />
+      {error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      ) : null}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TecnicosTable
+          items={itensVisiveis}
+          hasMore={hasMore}
+          sentinelRef={sentinelRef}
+          selectedIds={selectedIds}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onToggle={handleToggle}
+          onToggleAll={handleToggleAll}
+          onEdit={handleEdit}
+        />
+      )}
+
+      <Paper
+        elevation={3}
+        sx={{
+          position: 'fixed',
+          right: 24,
+          bottom: 24,
+          px: 2,
+          py: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          Exibindo {Math.min(visibleCount, tecnicosFiltrados.length)} de {tecnicosFiltrados.length}
+        </Typography>
+        <Tooltip title="Voltar ao topo">
+          <IconButton size="small" color="primary" onClick={scrollToTop}>
+            <KeyboardArrowUpIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Paper>
 
       <TecnicoFormDialog
         open={dialogOpen}

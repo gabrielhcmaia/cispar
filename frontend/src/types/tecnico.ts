@@ -13,7 +13,7 @@ export type Funcao =
   | 'Inspeção';
 
 export interface Tecnico {
-  id: string;
+  id: number;
   nome: string;
   cargo: Cargo;
   funcao: Funcao;
@@ -21,5 +21,4 @@ export interface Tecnico {
   email: string;
 }
 
-/** Dados manipulados no formulário de criação/edição (sem o id, gerado pelo sistema). */
 export type TecnicoFormData = Omit<Tecnico, 'id'>;

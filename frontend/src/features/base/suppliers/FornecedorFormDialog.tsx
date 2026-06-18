@@ -1,5 +1,4 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
-import type { SxProps, Theme } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -7,19 +6,22 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
+import Grid from '@mui/material/Grid2';
 
+import { SELECT_MENU_PROPS, SELECT_SX } from '../../../components/selectStyles';
 import type { Cidade, Fornecedor, FornecedorFormData, Tipo } from '../../../types/fornecedor';
 import { CIDADE_OPTIONS, TIPO_LABEL, TIPO_OPTIONS } from './fornecedoresConstants';
 import { formatCnpj, formatCpf, formatPhone } from '../../../utils/masks';
 import { isRequired, isValidCnpj, isValidCpf, isValidPhone } from '../../../utils/validators';
+
+const INPUT_SX = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
 
 export interface FornecedorFormDialogProps {
   open: boolean;
   mode: 'create' | 'edit';
   initialData?: Fornecedor | null;
   onClose: () => void;
-  onSubmit: (data: FornecedorFormData) => void;
+  onSubmit: (data: FornecedorFormData) => Promise<void>;
 }
 
 interface FornecedorFormState {
@@ -40,16 +42,12 @@ const EMPTY_FORM: FornecedorFormState = {
   cidade: '',
 };
 
-const INPUT_SX: SxProps<Theme> = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
-
-/** Aplica a máscara de documento de acordo com o tipo selecionado. */
 function maskDocumento(value: string, tipo: Tipo | ''): string {
   return tipo === 'PJ' ? formatCnpj(value) : formatCpf(value);
 }
 
 function validate(values: FornecedorFormState): FormErrors {
   const errors: FormErrors = {};
-
   if (values.tipo === '') {
     errors.tipo = 'Selecione o tipo.';
   }
@@ -71,7 +69,6 @@ function validate(values: FornecedorFormState): FormErrors {
   if (values.cidade === '') {
     errors.cidade = 'Selecione a cidade.';
   }
-
   return errors;
 }
 
@@ -84,8 +81,8 @@ export function FornecedorFormDialog({
 }: FornecedorFormDialogProps): ReactElement {
   const [values, setValues] = useState<FornecedorFormState>(EMPTY_FORM);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Carrega os dados ao abrir (edição) ou limpa o formulário (criação).
   useEffect(() => {
     if (!open) {
       return;
@@ -102,16 +99,15 @@ export function FornecedorFormDialog({
       setValues(EMPTY_FORM);
     }
     setSubmitAttempted(false);
+    setSaving(false);
   }, [open, initialData]);
 
-  // Os erros só aparecem após a primeira tentativa de envio (feedback ao vivo depois).
   const errors: FormErrors = submitAttempted ? validate(values) : {};
 
   type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
 
   const handleTipoChange = (event: FieldChangeEvent): void => {
     const tipo = event.target.value as Tipo;
-    // Re-mascara o documento existente conforme o novo tipo.
     setValues((prev) => ({ ...prev, tipo, documento: maskDocumento(prev.documento, tipo) }));
   };
   const handleNomeChange = (event: FieldChangeEvent): void => {
@@ -128,19 +124,24 @@ export function FornecedorFormDialog({
     setValues((prev) => ({ ...prev, cidade: event.target.value as Cidade }));
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     setSubmitAttempted(true);
     const validation = validate(values);
     if (Object.keys(validation).length > 0) {
       return;
     }
-    onSubmit({
-      tipo: values.tipo as Tipo,
-      nome: values.nome.trim(),
-      documento: values.documento.trim(),
-      telefone: values.telefone.trim(),
-      cidade: values.cidade as Cidade,
-    });
+    setSaving(true);
+    try {
+      await onSubmit({
+        tipo: values.tipo as Tipo,
+        nome: values.nome.trim(),
+        documento: values.documento.trim(),
+        telefone: values.telefone.trim(),
+        cidade: values.cidade as Cidade,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const documentoLabel =
@@ -153,87 +154,100 @@ export function FornecedorFormDialog({
       </DialogTitle>
 
       <DialogContent dividers>
-        <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-          <TextField
-            select
-            label="Tipo"
-            value={values.tipo}
-            onChange={handleTipoChange}
-            error={Boolean(errors.tipo)}
-            helperText={errors.tipo}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          >
-            {TIPO_OPTIONS.map((tipo) => (
-              <MenuItem key={tipo} value={tipo}>
-                {`${tipo} — ${TIPO_LABEL[tipo]}`}
-              </MenuItem>
-            ))}
-          </TextField>
+        <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              select
+              label="Tipo"
+              value={values.tipo}
+              onChange={handleTipoChange}
+              error={Boolean(errors.tipo)}
+              helperText={errors.tipo}
+              fullWidth
+              required
+              sx={SELECT_SX}
+              slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
+            >
+              {TIPO_OPTIONS.map((tipo) => (
+                <MenuItem key={tipo} value={tipo}>
+                  {`${tipo} — ${TIPO_LABEL[tipo]}`}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-          <TextField
-            label="Nome / Razão Social"
-            value={values.nome}
-            onChange={handleNomeChange}
-            error={Boolean(errors.nome)}
-            helperText={errors.nome}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              select
+              label="Cidade"
+              value={values.cidade}
+              onChange={handleCidadeChange}
+              error={Boolean(errors.cidade)}
+              helperText={errors.cidade}
+              fullWidth
+              required
+              sx={SELECT_SX}
+              slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
+            >
+              {CIDADE_OPTIONS.map((cidade) => (
+                <MenuItem key={cidade} value={cidade}>
+                  {cidade}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-          <TextField
-            label={documentoLabel}
-            value={values.documento}
-            onChange={handleDocumentoChange}
-            error={Boolean(errors.documento)}
-            helperText={errors.documento}
-            placeholder={values.tipo === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              label="Nome / Razão Social"
+              value={values.nome}
+              onChange={handleNomeChange}
+              error={Boolean(errors.nome)}
+              helperText={errors.nome}
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            label="Telefone"
-            value={values.telefone}
-            onChange={handleTelefoneChange}
-            error={Boolean(errors.telefone)}
-            helperText={errors.telefone}
-            placeholder="(00) 00000-0000"
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              label={documentoLabel}
+              value={values.documento}
+              onChange={handleDocumentoChange}
+              error={Boolean(errors.documento)}
+              helperText={errors.documento}
+              placeholder={values.tipo === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            select
-            label="Cidade"
-            value={values.cidade}
-            onChange={handleCidadeChange}
-            error={Boolean(errors.cidade)}
-            helperText={errors.cidade}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          >
-            {CIDADE_OPTIONS.map((cidade) => (
-              <MenuItem key={cidade} value={cidade}>
-                {cidade}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              label="Telefone"
+              value={values.telefone}
+              onChange={handleTelefoneChange}
+              error={Boolean(errors.telefone)}
+              helperText={errors.telefone}
+              placeholder="(00) 00000-0000"
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
+        </Grid>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none' }}>
+        <Button onClick={onClose} color="inherit" disabled={saving} sx={{ textTransform: 'none' }}>
           Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
+          disabled={saving}
           sx={{ textTransform: 'none', borderRadius: 1.5 }}
         >
           {mode === 'edit' ? 'Salvar alterações' : 'Cadastrar'}

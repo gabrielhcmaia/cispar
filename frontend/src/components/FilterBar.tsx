@@ -6,20 +6,13 @@ import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 
 export interface FilterBarProps {
-  /** Valor do campo de busca livre. */
   search: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
-  /** Selects específicos de cada tela. */
   children?: ReactNode;
-  /** Slot à direita (ex.: ExportMenu). */
   actions?: ReactNode;
 }
 
-/**
- * Barra de filtros reutilizável: campo de busca livre + slot para selects
- * específicos da tela + slot de ações alinhado à direita.
- */
 export function FilterBar({
   search,
   onSearchChange,

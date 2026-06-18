@@ -1,12 +1,3 @@
-/**
- * Utilitários de exportação genéricos e tipados, reaproveitáveis por qualquer tela.
- *
- * - CSV: gera download real via Blob nativo (sem dependências).
- * - PDF: implementação mockada/estruturada que abre uma janela de impressão
- *        (Salvar como PDF). Pode ser substituída por jspdf futuramente sem
- *        alterar quem consome `exportToPdf`.
- */
-
 export interface ExportColumn<T> {
   header: string;
   accessor: (row: T) => string;
@@ -27,19 +18,13 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-/** Exporta as linhas para um arquivo CSV (download real). */
-export function exportToCsv<T>(
-  filename: string,
-  columns: ExportColumn<T>[],
-  rows: T[]
-): void {
+export function exportToCsv<T>(filename: string, columns: ExportColumn<T>[], rows: T[]): void {
   const header = columns.map((column) => escapeCsv(column.header)).join(';');
   const body = rows
     .map((row) => columns.map((column) => escapeCsv(column.accessor(row))).join(';'))
     .join('\r\n');
   const csv = body.length > 0 ? `${header}\r\n${body}` : header;
 
-  // BOM (﻿) garante acentuação correta ao abrir no Excel.
   const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -51,15 +36,7 @@ export function exportToCsv<T>(
   URL.revokeObjectURL(url);
 }
 
-/**
- * Exporta as linhas para PDF (mock estruturado via janela de impressão).
- * Substitua por uma lib (ex.: jspdf + autotable) quando necessário.
- */
-export function exportToPdf<T>(
-  title: string,
-  columns: ExportColumn<T>[],
-  rows: T[]
-): void {
+export function exportToPdf<T>(title: string, columns: ExportColumn<T>[], rows: T[]): void {
   const printWindow = window.open('', '_blank', 'width=900,height=650');
   if (!printWindow) {
     window.alert(

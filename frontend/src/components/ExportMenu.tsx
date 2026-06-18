@@ -4,6 +4,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Tooltip from '@mui/material/Tooltip';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -12,13 +13,14 @@ export interface ExportMenuProps {
   onExportCsv: () => void;
   onExportPdf: () => void;
   disabled?: boolean;
+  disabledMessage?: string;
 }
 
-/** Botão "Exportar" reutilizável que abre um Menu com as opções CSV e PDF. */
 export function ExportMenu({
   onExportCsv,
   onExportPdf,
   disabled = false,
+  disabledMessage = 'Selecione ao menos um item para exportar.',
 }: ExportMenuProps): ReactElement {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
@@ -38,18 +40,28 @@ export function ExportMenu({
     onExportPdf();
   };
 
+  const button = (
+    <Button
+      variant="outlined"
+      color="primary"
+      startIcon={<FileDownloadIcon />}
+      onClick={handleOpen}
+      disabled={disabled}
+      sx={{ textTransform: 'none', borderRadius: 1.5, whiteSpace: 'nowrap' }}
+    >
+      Exportar
+    </Button>
+  );
+
   return (
     <>
-      <Button
-        variant="outlined"
-        color="primary"
-        startIcon={<FileDownloadIcon />}
-        onClick={handleOpen}
-        disabled={disabled}
-        sx={{ textTransform: 'none', borderRadius: 1.5, whiteSpace: 'nowrap' }}
-      >
-        Exportar
-      </Button>
+      {disabled ? (
+        <Tooltip title={disabledMessage}>
+          <span>{button}</span>
+        </Tooltip>
+      ) : (
+        button
+      )}
       <Menu
         anchorEl={anchorEl}
         open={open}

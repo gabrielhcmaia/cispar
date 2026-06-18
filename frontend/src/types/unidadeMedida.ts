@@ -7,11 +7,10 @@ export type Grandeza =
   | 'Tempo';
 
 export interface UnidadeMedida {
-  id: string;
+  id: number;
   nome: string;
   sigla: string;
   grandeza: Grandeza;
 }
 
-/** Dados manipulados no formulário de criação/edição (sem o id, gerado pelo sistema). */
 export type UnidadeMedidaFormData = Omit<UnidadeMedida, 'id'>;

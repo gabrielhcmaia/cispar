@@ -1,34 +1,61 @@
-import { useCallback, useState } from 'react';
-import { SEED_UNIDADES } from '../features/base/units/unidadesConstants';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  atualizarUnidade,
+  criarUnidade,
+  excluirUnidade,
+  listarUnidades,
+} from '../services/unidadesService';
 import type { UnidadeMedida, UnidadeMedidaFormData } from '../types/unidadeMedida';
 
 export interface UseUnidadesMedidaResult {
   unidades: UnidadeMedida[];
-  addUnidade: (data: UnidadeMedidaFormData) => void;
-  updateUnidade: (id: string, data: UnidadeMedidaFormData) => void;
-  removeUnidade: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addUnidade: (data: UnidadeMedidaFormData) => Promise<void>;
+  updateUnidade: (id: number, data: UnidadeMedidaFormData) => Promise<void>;
+  removeUnidade: (id: number) => Promise<void>;
 }
 
-/**
- * Mantém a lista de unidades de medida em estado de memória (React state),
- * com dados iniciais mockados. Centraliza as operações de CRUD da tela.
- */
+function ordenarPorIdDesc(lista: UnidadeMedida[]): UnidadeMedida[] {
+  return [...lista].sort((a, b) => b.id - a.id);
+}
+
 export function useUnidadesMedida(): UseUnidadesMedidaResult {
-  const [unidades, setUnidades] = useState<UnidadeMedida[]>(SEED_UNIDADES);
+  const [unidades, setUnidades] = useState<UnidadeMedida[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addUnidade = useCallback((data: UnidadeMedidaFormData): void => {
-    setUnidades((prev) => [...prev, { id: crypto.randomUUID(), ...data }]);
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await listarUnidades();
+      setUnidades(ordenarPorIdDesc(data));
+    } catch {
+      setError('Erro ao carregar unidades de medida.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const updateUnidade = useCallback((id: string, data: UnidadeMedidaFormData): void => {
-    setUnidades((prev) =>
-      prev.map((unidade) => (unidade.id === id ? { ...unidade, ...data } : unidade))
-    );
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  const addUnidade = useCallback(async (data: UnidadeMedidaFormData) => {
+    const criada = await criarUnidade(data);
+    setUnidades((prev) => ordenarPorIdDesc([criada, ...prev]));
   }, []);
 
-  const removeUnidade = useCallback((id: string): void => {
-    setUnidades((prev) => prev.filter((unidade) => unidade.id !== id));
+  const updateUnidade = useCallback(async (id: number, data: UnidadeMedidaFormData) => {
+    const atualizada = await atualizarUnidade(id, data);
+    setUnidades((prev) => ordenarPorIdDesc(prev.map((item) => (item.id === id ? atualizada : item))));
   }, []);
 
-  return { unidades, addUnidade, updateUnidade, removeUnidade };
+  const removeUnidade = useCallback(async (id: number) => {
+    await excluirUnidade(id);
+    setUnidades((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  return { unidades, loading, error, addUnidade, updateUnidade, removeUnidade };
 }

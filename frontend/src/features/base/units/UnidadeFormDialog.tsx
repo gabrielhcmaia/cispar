@@ -1,5 +1,4 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
-import type { SxProps, Theme } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -7,21 +6,23 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
+import Grid from '@mui/material/Grid2';
 
+import { SELECT_MENU_PROPS, SELECT_SX } from '../../../components/selectStyles';
 import type { Grandeza, UnidadeMedida, UnidadeMedidaFormData } from '../../../types/unidadeMedida';
 import { GRANDEZA_OPTIONS } from './unidadesConstants';
 import { isRequired } from '../../../utils/validators';
+
+const INPUT_SX = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
 
 export interface UnidadeFormDialogProps {
   open: boolean;
   mode: 'create' | 'edit';
   initialData?: UnidadeMedida | null;
   onClose: () => void;
-  onSubmit: (data: UnidadeMedidaFormData) => void;
+  onSubmit: (data: UnidadeMedidaFormData) => Promise<void>;
 }
 
-/** Estado interno do formulário (grandeza pode estar vazia antes da seleção). */
 interface UnidadeFormState {
   nome: string;
   sigla: string;
@@ -36,11 +37,8 @@ const EMPTY_FORM: UnidadeFormState = {
   grandeza: '',
 };
 
-const INPUT_SX: SxProps<Theme> = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
-
 function validate(values: UnidadeFormState): FormErrors {
   const errors: FormErrors = {};
-
   if (!isRequired(values.nome)) {
     errors.nome = 'Informe o nome.';
   }
@@ -50,7 +48,6 @@ function validate(values: UnidadeFormState): FormErrors {
   if (values.grandeza === '') {
     errors.grandeza = 'Selecione a grandeza.';
   }
-
   return errors;
 }
 
@@ -63,8 +60,8 @@ export function UnidadeFormDialog({
 }: UnidadeFormDialogProps): ReactElement {
   const [values, setValues] = useState<UnidadeFormState>(EMPTY_FORM);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Carrega os dados ao abrir (edição) ou limpa o formulário (criação).
   useEffect(() => {
     if (!open) {
       return;
@@ -79,9 +76,9 @@ export function UnidadeFormDialog({
       setValues(EMPTY_FORM);
     }
     setSubmitAttempted(false);
+    setSaving(false);
   }, [open, initialData]);
 
-  // Os erros só aparecem após a primeira tentativa de envio (feedback ao vivo depois).
   const errors: FormErrors = submitAttempted ? validate(values) : {};
 
   type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
@@ -96,17 +93,22 @@ export function UnidadeFormDialog({
     setValues((prev) => ({ ...prev, grandeza: event.target.value as Grandeza }));
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     setSubmitAttempted(true);
     const validation = validate(values);
     if (Object.keys(validation).length > 0) {
       return;
     }
-    onSubmit({
-      nome: values.nome.trim(),
-      sigla: values.sigla.trim(),
-      grandeza: values.grandeza as Grandeza,
-    });
+    setSaving(true);
+    try {
+      await onSubmit({
+        nome: values.nome.trim(),
+        sigla: values.sigla.trim(),
+        grandeza: values.grandeza as Grandeza,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -116,57 +118,65 @@ export function UnidadeFormDialog({
       </DialogTitle>
 
       <DialogContent dividers>
-        <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-          <TextField
-            label="Nome"
-            value={values.nome}
-            onChange={handleNomeChange}
-            error={Boolean(errors.nome)}
-            helperText={errors.nome}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+        <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              label="Nome"
+              value={values.nome}
+              onChange={handleNomeChange}
+              error={Boolean(errors.nome)}
+              helperText={errors.nome}
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            label="Sigla"
-            value={values.sigla}
-            onChange={handleSiglaChange}
-            error={Boolean(errors.sigla)}
-            helperText={errors.sigla}
-            placeholder="Ex.: m, m³/h, kW"
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              label="Sigla"
+              value={values.sigla}
+              onChange={handleSiglaChange}
+              error={Boolean(errors.sigla)}
+              helperText={errors.sigla}
+              placeholder="Ex.: m, m³/h, kW"
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            select
-            label="Grandeza"
-            value={values.grandeza}
-            onChange={handleGrandezaChange}
-            error={Boolean(errors.grandeza)}
-            helperText={errors.grandeza}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          >
-            {GRANDEZA_OPTIONS.map((grandeza) => (
-              <MenuItem key={grandeza} value={grandeza}>
-                {grandeza}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              select
+              label="Grandeza"
+              value={values.grandeza}
+              onChange={handleGrandezaChange}
+              error={Boolean(errors.grandeza)}
+              helperText={errors.grandeza}
+              fullWidth
+              required
+              sx={SELECT_SX}
+              slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
+            >
+              {GRANDEZA_OPTIONS.map((grandeza) => (
+                <MenuItem key={grandeza} value={grandeza}>
+                  {grandeza}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none' }}>
+        <Button onClick={onClose} color="inherit" disabled={saving} sx={{ textTransform: 'none' }}>
           Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
+          disabled={saving}
           sx={{ textTransform: 'none', borderRadius: 1.5 }}
         >
           {mode === 'edit' ? 'Salvar alterações' : 'Cadastrar'}

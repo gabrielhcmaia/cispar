@@ -1,5 +1,4 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
-import type { SxProps, Theme } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -7,22 +6,24 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
+import Grid from '@mui/material/Grid2';
 
+import { SELECT_MENU_PROPS, SELECT_SX } from '../../../components/selectStyles';
 import type { Cargo, Funcao, Tecnico, TecnicoFormData } from '../../../types/tecnico';
 import { CARGO_OPTIONS, FUNCAO_OPTIONS } from './tecnicosConstants';
 import { formatPhone } from '../../../utils/masks';
 import { isRequired, isValidEmail, isValidPhone } from '../../../utils/validators';
+
+const INPUT_SX = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
 
 export interface TecnicoFormDialogProps {
   open: boolean;
   mode: 'create' | 'edit';
   initialData?: Tecnico | null;
   onClose: () => void;
-  onSubmit: (data: TecnicoFormData) => void;
+  onSubmit: (data: TecnicoFormData) => Promise<void>;
 }
 
-/** Estado interno do formulário (cargo/função podem estar vazios antes da seleção). */
 interface TecnicoFormState {
   nome: string;
   cargo: Cargo | '';
@@ -41,11 +42,8 @@ const EMPTY_FORM: TecnicoFormState = {
   email: '',
 };
 
-const INPUT_SX: SxProps<Theme> = { '& .MuiOutlinedInput-root': { borderRadius: 1.5 } };
-
 function validate(values: TecnicoFormState): FormErrors {
   const errors: FormErrors = {};
-
   if (!isRequired(values.nome)) {
     errors.nome = 'Informe o nome.';
   }
@@ -65,7 +63,6 @@ function validate(values: TecnicoFormState): FormErrors {
   } else if (!isValidEmail(values.email)) {
     errors.email = 'E-mail inválido.';
   }
-
   return errors;
 }
 
@@ -78,8 +75,8 @@ export function TecnicoFormDialog({
 }: TecnicoFormDialogProps): ReactElement {
   const [values, setValues] = useState<TecnicoFormState>(EMPTY_FORM);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Carrega os dados ao abrir (edição) ou limpa o formulário (criação).
   useEffect(() => {
     if (!open) {
       return;
@@ -96,9 +93,9 @@ export function TecnicoFormDialog({
       setValues(EMPTY_FORM);
     }
     setSubmitAttempted(false);
+    setSaving(false);
   }, [open, initialData]);
 
-  // Os erros só aparecem após a primeira tentativa de envio (feedback ao vivo depois).
   const errors: FormErrors = submitAttempted ? validate(values) : {};
 
   type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
@@ -119,19 +116,24 @@ export function TecnicoFormDialog({
     setValues((prev) => ({ ...prev, email: event.target.value }));
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     setSubmitAttempted(true);
     const validation = validate(values);
     if (Object.keys(validation).length > 0) {
       return;
     }
-    onSubmit({
-      nome: values.nome.trim(),
-      cargo: values.cargo as Cargo,
-      funcao: values.funcao as Funcao,
-      telefone: values.telefone.trim(),
-      email: values.email.trim(),
-    });
+    setSaving(true);
+    try {
+      await onSubmit({
+        nome: values.nome.trim(),
+        cargo: values.cargo as Cargo,
+        funcao: values.funcao as Funcao,
+        telefone: values.telefone.trim(),
+        email: values.email.trim(),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -141,87 +143,100 @@ export function TecnicoFormDialog({
       </DialogTitle>
 
       <DialogContent dividers>
-        <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-          <TextField
-            label="Nome"
-            value={values.nome}
-            onChange={handleNomeChange}
-            error={Boolean(errors.nome)}
-            helperText={errors.nome}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+        <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              label="Nome"
+              value={values.nome}
+              onChange={handleNomeChange}
+              error={Boolean(errors.nome)}
+              helperText={errors.nome}
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            select
-            label="Cargo"
-            value={values.cargo}
-            onChange={handleCargoChange}
-            error={Boolean(errors.cargo)}
-            helperText={errors.cargo}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          >
-            {CARGO_OPTIONS.map((cargo) => (
-              <MenuItem key={cargo} value={cargo}>
-                {cargo}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              select
+              label="Cargo"
+              value={values.cargo}
+              onChange={handleCargoChange}
+              error={Boolean(errors.cargo)}
+              helperText={errors.cargo}
+              fullWidth
+              required
+              sx={SELECT_SX}
+              slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
+            >
+              {CARGO_OPTIONS.map((cargo) => (
+                <MenuItem key={cargo} value={cargo}>
+                  {cargo}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-          <TextField
-            select
-            label="Função"
-            value={values.funcao}
-            onChange={handleFuncaoChange}
-            error={Boolean(errors.funcao)}
-            helperText={errors.funcao}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          >
-            {FUNCAO_OPTIONS.map((funcao) => (
-              <MenuItem key={funcao} value={funcao}>
-                {funcao}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              select
+              label="Função"
+              value={values.funcao}
+              onChange={handleFuncaoChange}
+              error={Boolean(errors.funcao)}
+              helperText={errors.funcao}
+              fullWidth
+              required
+              sx={SELECT_SX}
+              slotProps={{ select: { MenuProps: SELECT_MENU_PROPS } }}
+            >
+              {FUNCAO_OPTIONS.map((funcao) => (
+                <MenuItem key={funcao} value={funcao}>
+                  {funcao}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-          <TextField
-            label="Telefone"
-            value={values.telefone}
-            onChange={handleTelefoneChange}
-            error={Boolean(errors.telefone)}
-            helperText={errors.telefone}
-            placeholder="(00) 00000-0000"
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              label="Telefone"
+              value={values.telefone}
+              onChange={handleTelefoneChange}
+              error={Boolean(errors.telefone)}
+              helperText={errors.telefone}
+              placeholder="(00) 00000-0000"
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
 
-          <TextField
-            label="E-mail"
-            type="email"
-            value={values.email}
-            onChange={handleEmailChange}
-            error={Boolean(errors.email)}
-            helperText={errors.email}
-            fullWidth
-            required
-            sx={INPUT_SX}
-          />
-        </Stack>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TextField
+              label="E-mail"
+              type="email"
+              value={values.email}
+              onChange={handleEmailChange}
+              error={Boolean(errors.email)}
+              helperText={errors.email}
+              fullWidth
+              required
+              sx={INPUT_SX}
+            />
+          </Grid>
+        </Grid>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none' }}>
+        <Button onClick={onClose} color="inherit" disabled={saving} sx={{ textTransform: 'none' }}>
           Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
+          disabled={saving}
           sx={{ textTransform: 'none', borderRadius: 1.5 }}
         >
           {mode === 'edit' ? 'Salvar alterações' : 'Cadastrar'}
