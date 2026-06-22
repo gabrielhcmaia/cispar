@@ -1,6 +1,5 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
-import LoginIcon from '@mui/icons-material/Login';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import BuildIcon from '@mui/icons-material/Build';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -18,43 +17,42 @@ export function getNavGroups(role?: string): NavGroup[] {
   const isAdmin = role === 'ROLE_ADMIN';
 
   return [
-  {
-    groupLabel: 'Menu Principal',
-    items: [
-      { label: 'Dashboard',    path: '/',            icon: <DashboardIcon /> },
-      ...(isAdmin ? [{ label: 'Usuários', path: '/users', icon: <PeopleIcon /> }] : []),
-      { label: 'Login',        path: '/login',       icon: <LoginIcon /> },
-      { label: 'Poços',        path: '/wells',       icon: <OpacityIcon /> },
-      { label: 'Equipamentos', path: '/equipment',   icon: <BuildIcon /> },
-      { label: 'Manutenções',  path: '/maintenance', icon: <InventoryIcon /> },
-    ],
-  },
-  {
-    groupLabel: 'Cadastros',
-    items: [
-      {
-        label: 'Cadastros Base',
-        icon: <FormatListBulletedIcon />,
-        children: [
-          { label: 'Técnicos',           path: '/base/technicians', icon: <EngineeringIcon /> },
-          { label: 'Fornecedores',       path: '/base/suppliers',   icon: <LocalShippingIcon /> },
-          { label: 'Marcas',             path: '/base/brands',      icon: <LabelIcon /> },
-          { label: 'Unidades de Medida', path: '/base/units',       icon: <StraightenIcon /> },
-          { label: 'Cidades / Região',   path: '/base/regions',     icon: <LocationOnIcon /> },
-        ],
-      },
-      {
-        label: 'Relatórios',
-        icon: <AssessmentIcon />,
-        children: [
-          { label: 'Visão Geral',  path: '/reports/overview',   icon: <AssessmentIcon /> },
-          { label: 'Manutenções',  path: '/reports/maintenance', icon: <SummarizeIcon /> },
-          { label: 'Poços',        path: '/reports/wells',       icon: <OpacityIcon /> },
-          { label: 'Equipamentos', path: '/reports/equipment',   icon: <BuildIcon /> },
-        ],
-      },
-    ],
-  },
+    {
+      groupLabel: 'Menu Principal',
+      items: [
+        { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
+        ...(isAdmin ? [{ label: 'Usuários', path: '/users', icon: <PeopleIcon /> }] : []),
+        { label: 'Poços', path: '/wells', icon: <OpacityIcon /> },
+        { label: 'Equipamentos', path: '/equipment', icon: <BuildIcon /> },
+        { label: 'Manutenções', path: '/maintenance', icon: <InventoryIcon /> },
+      ],
+    },
+    {
+      groupLabel: 'Cadastros',
+      items: [
+        {
+          label: 'Cadastros Base',
+          icon: <FormatListBulletedIcon />,
+          children: [
+            { label: 'Técnicos', path: '/base/technicians', icon: <EngineeringIcon /> },
+            { label: 'Fornecedores', path: '/base/suppliers', icon: <LocalShippingIcon /> },
+            { label: 'Marcas', path: '/base/brands', icon: <LabelIcon /> },
+            { label: 'Unidades de Medida', path: '/base/units', icon: <StraightenIcon /> },
+            { label: 'Cidades / Região', path: '/base/regions', icon: <LocationOnIcon /> },
+          ],
+        },
+        {
+          label: 'Relatórios',
+          icon: <AssessmentIcon />,
+          children: [
+            { label: 'Visão Geral', path: '/reports/overview', icon: <AssessmentIcon /> },
+            { label: 'Manutenções', path: '/reports/maintenance', icon: <SummarizeIcon /> },
+            { label: 'Poços', path: '/reports/wells', icon: <OpacityIcon /> },
+            { label: 'Equipamentos', path: '/reports/equipment', icon: <BuildIcon /> },
+          ],
+        },
+      ],
+    },
   ];
 }
 
