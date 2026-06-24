@@ -1,6 +1,8 @@
 package br.com.cispar.modules.users.controller;
 
+import br.com.cispar.modules.users.domain.Perfil;
 import br.com.cispar.modules.users.domain.UserModel;
+import br.com.cispar.modules.users.domain.UserRole;
 import br.com.cispar.modules.users.dto.UserRequestDto;
 import br.com.cispar.modules.users.dto.UserResponseDto;
 import br.com.cispar.modules.users.service.impl.UserService;
@@ -27,22 +29,37 @@ public class UserController extends CrudController<UserModel, Long, UserRequestD
     @Override
     protected UserModel toEntity(UserRequestDto dto) {
         UserModel user = new UserModel();
-        user.setName(dto.name());
-        user.setUsername(dto.username());
-        user.setRole(dto.role());
-        user.setActive(dto.active());
-        user.setCreatedAt(dto.createdAt());
-        user.setUpdatedAt(dto.updatedAt());
+        user.setName(dto.nome());
+        user.setEmail(dto.email());
+        user.setUsername(dto.email());
+        user.setPassword(dto.senha());
+        user.setPerfil(dto.perfil());
+        user.setRole(toRole(dto.perfil()));
+        user.setCargo(dto.cargo());
+        user.setActive(dto.ativo());
         return user;
     }
 
     @Override
     protected UserResponseDto toResponse(UserModel user) {
-        return new UserResponseDto(user.getId(), user.getName(), user.getUsername(), user.getRole(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
+        return new UserResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getPerfil(),
+                user.getCargo(),
+                user.isActive(),
+                user.getLastAccess(),
+                user.getCreatedAt()
+        );
     }
 
     @Override
     protected Long extractId(UserModel user) {
         return user.getId();
+    }
+
+    private UserRole toRole(Perfil perfil) {
+        return perfil == Perfil.ADMINISTRADOR ? UserRole.ADMIN : UserRole.USER;
     }
 }

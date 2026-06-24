@@ -2,6 +2,7 @@ package br.com.cispar.shared.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -49,6 +50,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleAuthentication() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 new ApiError(401, "Unauthorized", "Credenciais inválidas", null, OffsetDateTime.now())
+        );
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(
+                new ApiError(400, "Bad Request", ex.getMessage(), null, OffsetDateTime.now())
+        );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ApiError(409, "Conflict", "E-mail já cadastrado", null, OffsetDateTime.now())
         );
     }
 

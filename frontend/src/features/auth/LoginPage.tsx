@@ -25,7 +25,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState(() => localStorage.getItem('login_username') ?? '');
+  const [email, setEmail] = useState(() => localStorage.getItem('login_username') ?? '');
   const [password, setPassword] = useState(() => localStorage.getItem('login_password') ?? '');
   const [rememberPassword, setRememberPassword] = useState(
     () => localStorage.getItem('login_remember') === 'true'
@@ -34,8 +34,8 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleUsernameChange = (value: string) => {
-    setUsername(value);
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
     localStorage.setItem('login_username', value);
   };
 
@@ -55,7 +55,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await login({ username, password });
+      await login({ email, password });
       navigate('/');
     } catch (err) {
       setError(
@@ -148,10 +148,10 @@ export const LoginPage: React.FC = () => {
 
                 <TextField
                   label="E-mail"
-                  name="username"
+                  name="email"
                   type="email"
-                  value={username}
-                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  value={email}
+                  onChange={(e) => handleEmailChange(e.target.value)}
                   placeholder="seu.email@cispar.com"
                   autoComplete="email"
                   fullWidth

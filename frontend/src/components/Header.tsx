@@ -25,8 +25,8 @@ const DRAWER_WIDTH = 260;
 const COLLAPSED_WIDTH = 64;
 
 const ROLE_LABELS: Record<string, string> = {
-  USER_ADMIN: 'Administrador',
-  USER_DEFAULT: 'Usuário',
+  ROLE_ADMIN: 'Administrador',
+  ROLE_USER: 'Usuário',
 };
 
 export default function Header({

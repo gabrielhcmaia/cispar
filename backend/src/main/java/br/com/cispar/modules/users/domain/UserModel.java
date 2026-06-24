@@ -24,6 +24,9 @@ public class UserModel {
     @Column(name = "username", length = 100)
     private String username;
 
+    @Column(name = "email", length = 150)
+    private String email;
+
     @Column(name = "password", length = 60)
     private String password;
 
@@ -31,8 +34,18 @@ public class UserModel {
     @Column(name = "role")
     private UserRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "perfil", length = 20)
+    private Perfil perfil;
+
+    @Column(name = "cargo", length = 100)
+    private String cargo;
+
     @Column(name = "active")
     private boolean active;
+
+    @Column(name = "last_access")
+    private LocalDateTime lastAccess;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -46,8 +59,12 @@ public class UserModel {
                 + "id=" + id
                 + ", name='" + name + '\''
                 + ", username='" + username + '\''
+                + ", email='" + email + '\''
                 + ", role=" + role
+                + ", perfil=" + perfil
+                + ", cargo='" + cargo + '\''
                 + ", active=" + active
+                + ", lastAccess=" + lastAccess
                 + ", createdAt=" + createdAt
                 + ", updatedAt=" + updatedAt
                 + '}';
