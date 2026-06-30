@@ -1,0 +1,18 @@
+CREATE TYPE status_poco AS ENUM ('ATIVO', 'EM_MANUTENCAO', 'INATIVO');
+CREATE TYPE tipo_ligacao AS ENUM ('MONOFASICA', 'BIFASICA', 'TRIFASICA');
+
+ALTER TABLE pocos DROP COLUMN IF EXISTS nome;
+ALTER TABLE pocos DROP COLUMN IF EXISTS logradouro;
+ALTER TABLE pocos DROP COLUMN IF EXISTS ativo;
+ALTER TABLE pocos DROP COLUMN IF EXISTS ligacao;
+ALTER TABLE pocos DROP COLUMN IF EXISTS profundidade_bomba;
+
+ALTER TABLE pocos ALTER COLUMN diametro TYPE DECIMAL(10,2);
+
+ALTER TABLE pocos ADD COLUMN identificacao  VARCHAR(10);
+ALTER TABLE pocos ADD COLUMN localizacao    VARCHAR(150);
+ALTER TABLE pocos ADD COLUMN status         status_poco NOT NULL DEFAULT 'ATIVO';
+ALTER TABLE pocos ADD COLUMN tipo_ligacao   tipo_ligacao;
+ALTER TABLE pocos ADD COLUMN acessorios     VARCHAR(150);
+ALTER TABLE pocos ADD COLUMN informacao     VARCHAR(250);
+ALTER TABLE pocos ADD COLUMN altura         VARCHAR(3);
